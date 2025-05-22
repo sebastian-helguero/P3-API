@@ -8,19 +8,20 @@ import {
     deleteProduct,
     restoreProduct
 } from "../services/product.service.js";
+import { verifyToken } from "../utils/auth.js";
 
 const router = Router();
 
-router.get("/products", findProducts);
+router.get("/products",verifyToken, findProducts);
 
-router.get("/products/:id", findProduct);
+router.get("/products/:id",verifyToken, findProduct);
 
-router.post("/products", createProduct);
+router.post("/products",verifyToken, createProduct);
 
-router.put("/products/:id", updateProduct);
+router.put("/products/:id",verifyToken, updateProduct);
 
-router.delete("/products/:id", deleteProduct);
+router.delete("/products/:id",verifyToken, deleteProduct);
 
-router.patch("/products/:id", restoreProduct);
+router.patch("/products/:id",verifyToken, restoreProduct);
 
 export default router;

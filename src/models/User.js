@@ -4,13 +4,17 @@ import { sequelize } from "../db.js";
 export const User = sequelize.define(
   "user",
   {
-    id: {
+    userId: {
       type: DataTypes.BIGINT,
       primaryKey: true,
       autoIncrement: true,
     },
     fullname: {
       type: DataTypes.STRING,
+      allowNull: false,
+    },
+    birthdate: {
+      type: DataTypes.DATE,
       allowNull: false,
     },
     email: {
@@ -37,12 +41,13 @@ export const User = sequelize.define(
     username: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
-    password: {
+    userPassword: {
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    role: {
+    userRole: {
       type: DataTypes.ENUM("user", "admin", "sysadmin"),
       allowNull: false,
       defaultValue: "user",

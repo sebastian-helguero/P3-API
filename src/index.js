@@ -4,6 +4,7 @@ import { sequelize } from './db.js';
 import { PORT } from './config.js';
 
 import productRoutes from './routes/products.routes.js';
+import userRoutes from './routes/users.routes.js';
 
 import "./models/Products.js";
 
@@ -20,6 +21,7 @@ try {
 
     app.listen(PORT);
     app.use(productRoutes);
+    app.use(userRoutes);
     console.log(`Server listening in port: ${PORT} `);
     await sequelize.sync();
 

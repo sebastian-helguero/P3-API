@@ -77,7 +77,7 @@ export const deleteProduct = async (req, res) => {
     }, {
         where: { productId: id }
     });
-    res.sendStatus(204);
+    res.sendStatus(204).json({ message: 'Producto eliminado' });
 }
 
 export const restoreProduct = async (req, res) => {
