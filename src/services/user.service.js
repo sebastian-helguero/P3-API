@@ -19,7 +19,11 @@ export const getUsers = async (req, res) => {
 
 export const registerUser = async (req, res) => {
     
-    const { fullname, birthdate, email, phone, areaCode, city, address, username, userPassword } = req.body;
+    const { fullName, birthDate, email, phone, areaCode, city, address, username, userPassword } = req.body;
+
+    if (!userPassword) {
+        return res.status(400).json({ message: "La contraseña es requerida" });
+    }
 
     const user = await User.findOne({
         where: {
@@ -36,8 +40,8 @@ export const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(saltRounds);
     const hashedPassword = await bcrypt.hash(userPassword, salt);
     const newUser = await User.create({
-        fullname,
-        birthdate,
+        fullName,
+        birthDate,
         email,
         phone,
         areaCode,
@@ -48,7 +52,7 @@ export const registerUser = async (req, res) => {
         userState: true,
         userRole: "user"
     });
-    res.json(newUser.id)
+    res.json(newUser.userId)
 }
 
 
