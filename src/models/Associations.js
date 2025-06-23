@@ -2,18 +2,24 @@ import { sequelize } from "../db.js";
 import { Order } from "./Order.js";
 import { Product } from "./Products.js";
 import { OrderProduct } from "./OrderProduct.js";
+import { User } from "./User.js";
+
+User.hasMany(Order, { foreignKey: "clientId", as: "orders" });
+Order.belongsTo(User, { foreignKey: "clientId", as: "client" });
 
 
 Order.belongsToMany(Product, {
     through: OrderProduct,
     foreignKey: "orderId",
-    otherKey: "productId"
+    otherKey: "productId",
+    as: "products"
 });
 
 Product.belongsToMany(Order, {
     through: OrderProduct,
     foreignKey: "productId",
-    otherKey: "orderId"
+    otherKey: "orderId",
+    as: "orders"
 });
 
 export {

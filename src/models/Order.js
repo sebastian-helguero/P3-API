@@ -9,8 +9,8 @@ export const Order = sequelize.define("order", {
         primaryKey: true,
         autoIncrement: true,
     },
-    paymentMathod: {
-        type: DataTypes.ENUM("credit card", "debit card", "bank transfer"),
+    paymentMethod: {
+        type: DataTypes.ENUM("bank transfer","debit","credit"),
         allowNull: false,
     },
     orderDate: {
@@ -19,7 +19,7 @@ export const Order = sequelize.define("order", {
         defaultValue: DataTypes.NOW
     },
     orderFinalPrice: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10,2),
         allowNull: false
     },
     orderState: {
@@ -31,7 +31,7 @@ export const Order = sequelize.define("order", {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model:{User},
+            model: User,
             key: "userId"
         }
     }

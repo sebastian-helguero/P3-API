@@ -8,8 +8,8 @@ export const verifyToken = (req, res, next) => {
         return res.status(401).send({ message: "No posee autorización requerida" });
 
     try {
-        const payload = jwt.verify(token, "programacion-2025");
-        console.log(payload)
+        const decoded = jwt.verify(token, "programacion-2025");
+        req.user = decoded;
         next();
     } catch (error) {
         return res.status(401).send({ message: "No posee permisos correctos" })

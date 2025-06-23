@@ -8,7 +8,7 @@ export const OrderProduct = sequelize.define("orderProduct", {
         type: DataTypes.INTEGER,
         primaryKey: true,
         references: {
-            model: {Order},
+            model: Order,
             key: "orderId"
         }
     },
@@ -16,7 +16,7 @@ export const OrderProduct = sequelize.define("orderProduct", {
         type: DataTypes.INTEGER,
         primaryKey: true,
         references: {
-            model: {Product},
+            model: Product,
             key: "productId"
         }
     },
