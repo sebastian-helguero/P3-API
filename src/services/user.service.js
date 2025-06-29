@@ -4,55 +4,67 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 
 import { validateEmail, validatePassword } from "../utils/validations.js";
+import { Op } from "sequelize";
 
 
-export const getUsers = async (req, res) => {
-    try {
-        const users = await User.findAll();
-        res.json(users);  
-    } catch (error) {
-        console.error("Error fetching users:", error);  
-    }
-    
-}
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: { exclude: ["userPassword"] },
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener la lista de usuarios" });
+  }
+};
 
 export const registerUser = async (req, res) => {
-    
-    const { fullName, birthDate, email, phone, areaCode, city, address, username, userPassword } = req.body;
+  const { fullName, birthDate, email, phone, areaCode, city, address, username, userPassword } = req.body;
+  
+  let { userRole, userState } = req.body;
 
-    if (!userPassword) {
-        return res.status(400).json({ message: "La contraseña es requerida" });
+  if (!userPassword) {
+    return res.status(400).json({ message: "La contraseña es requerida" });
+  }
+
+  const userExists = await User.findOne({
+    where: {
+      [Op.or]: [{ email }, { username }]
     }
+  });
 
-    const user = await User.findOne({
-        where: {
-            email,
-            username,
-            }
-        });
+  if (userExists) {
+    return res.status(400).json({ message: "Usuario existente" });
+  }
 
-        if(user)
-            return res.status(400).json({ message: "Usuario existente" });
-    
+  userRole = userRole || "user";
+  userState = typeof userState === "boolean" ? userState : true;
 
-    const saltRounds = 10;
-    const salt = await bcrypt.genSalt(saltRounds);
-    const hashedPassword = await bcrypt.hash(userPassword, salt);
-    const newUser = await User.create({
-        fullName,
-        birthDate,
-        email,
-        phone,
-        areaCode,
-        city,
-        address,
-        username,
-        userPassword: hashedPassword,
-        userState: true,
-        userRole: "user"
-    });
-    res.json(newUser.userId)
-}
+  if (req.user?.userRole !== "sysadmin") {
+    userRole = "user";
+    userState = true;
+  }
+
+  const saltRounds = 10;
+  const salt = await bcrypt.genSalt(saltRounds);
+  const hashedPassword = await bcrypt.hash(userPassword, salt);
+
+  const newUser = await User.create({
+    fullName,
+    birthDate,
+    email,
+    phone,
+    areaCode,
+    city,
+    address,
+    username,
+    userPassword: hashedPassword,
+    userState,
+    userRole,
+  });
+
+  res.json(newUser.userId);
+};
 
 export const loginUser = async (req, res) => {
     if (!validateLoginUser(req.body))
@@ -100,22 +112,26 @@ export const checkRole = (...allowedRoles) => (req, res, next) => {
 
 export const changeUserRole = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { userId, newRole } = req.body;
 
-    const user = await User.findOne({ where: { email } });
+    if (!["user", "admin"].includes(newRole)) {
+      return res.status(400).json({ error: "Rol no válido. Debe ser 'user' o 'admin'." });
+    }
+
+    const user = await User.findByPk(userId);
 
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado." });
     }
 
-    if (user.userRole !== "user") {
-      return res.status(400).json({ error: "Solo se puede cambiar el rol de usuarios comunes ('user')." });
+    if (user.userRole === newRole) {
+      return res.status(400).json({ error: `El usuario ya tiene el rol "${newRole}".` });
     }
 
-    user.userRole = "admin";
+    user.userRole = newRole;
     await user.save();
 
-    res.json({ message: "El usuario con email ${email} ahora es admin." });
+    res.json({ message: `El usuario con id ${userId} ahora es "${newRole}".` });
   } catch (err) {
     res.status(500).json({ error: "Error al cambiar el rol del usuario." });
   }
@@ -123,9 +139,9 @@ export const changeUserRole = async (req, res) => {
 
 export const userDelete = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { userId } = req.body;
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findByPk(userId);
 
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado." });
@@ -142,7 +158,7 @@ export const userDelete = async (req, res) => {
     user.userState = false;
     await user.save();
 
-    res.json({ mensaje: "Usuario con email ${email} ha sido dado de baja." });
+    res.json({ message: `Usuario con ID ${userId} ha sido dado de baja.` });
   } catch (error) {
     res.status(500).json({ error: "Error al dar de baja al usuario." });
   }
@@ -150,22 +166,22 @@ export const userDelete = async (req, res) => {
 
 export const userRecover = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { userId } = req.body;
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findByPk(userId);
 
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado." });
     }
 
     if (user.userState) {
-      return res.status(400).json({ error: "El usuario ya ha sido recuperado." });
+      return res.status(400).json({ error: "El usuario ya está activo." });
     }
 
     user.userState = true;
     await user.save();
 
-    res.json({ message: "Usuario con email ${email} ha sido recuperado." });
+    res.json({ message: `Usuario con ID ${userId} ha sido recuperado.` });
   } catch (error) {
     res.status(500).json({ error: "Error al recuperar al usuario." });
   }

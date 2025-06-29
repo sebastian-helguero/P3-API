@@ -7,6 +7,11 @@ import { User } from "./User.js";
 User.hasMany(Order, { foreignKey: "clientId", as: "orders" });
 Order.belongsTo(User, { foreignKey: "clientId", as: "client" });
 
+Order.hasMany(OrderProduct, { foreignKey: "orderId", as: "orderProducts" });
+OrderProduct.belongsTo(Order, { foreignKey: "orderId" });
+
+OrderProduct.belongsTo(Product, { foreignKey: "productId", as: "product" });
+Product.hasMany(OrderProduct, { foreignKey: "productId", as: "orderProducts" });
 
 Order.belongsToMany(Product, {
     through: OrderProduct,

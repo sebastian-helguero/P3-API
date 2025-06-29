@@ -2,6 +2,7 @@ import { sequelize } from "../db.js";
 import { Order } from "../models/Order.js";
 import { OrderProduct } from "../models/OrderProduct.js";
 import { Product } from "../models/Products.js";
+import { User } from "../models/User.js";
 
 
 export const createOrder = async (req, res) => {
@@ -62,5 +63,93 @@ export const createOrder = async (req, res) => {
   } catch (error) {
     console.error("Error al crear la orden:", error);
     res.status(500).json({ message: error.message || "Error al crear la orden" });
+  }
+};
+
+export const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.findAll({
+      include: [
+        {
+          model: User,
+          as: "client",
+          attributes: ["userId", "fullName", "email"]
+        },
+        {
+          model: Product,
+          as: "products",
+          through: { attributes: ["quantity", "orderSubtotalPrice"] }
+        }
+      ]
+    });
+    res.json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener las órdenes" });
+  }
+};
+
+export const getOrdersByUser = async (req, res) => {
+  const userId = req.user.userId;
+  try {
+    const orders = await Order.findAll({
+      where: { clientId: userId },
+      include: [
+        {
+          model: OrderProduct,
+          as: "orderProducts",
+          include: [{model:Product, as:"product"}]
+        },
+        {
+          model: User,
+          as: "client",
+          attributes: ['userId', 'fullName', 'email']
+        }
+      ]
+    });
+    res.json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener las órdenes del usuario" });
+  }
+};
+
+export const updateOrderState = async (req, res) => {
+  const { orderId, newState } = req.body;
+
+  try {
+    const order = await Order.findByPk(orderId, {
+      include: [
+        {
+          model: Product,
+          as: "products",
+          through: { attributes: ['quantity'] }
+        }
+      ]
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: "Orden no encontrada" });
+    }
+
+    if (!["completed", "cancelled"].includes(newState)) {
+      return res.status(400).json({ error: "Solo se puede cambiar el estado a 'completed' o 'cancelled'" });
+    }
+
+    if (newState === "cancelled" && order.orderState === "pending") {
+      for (const product of order.products) {
+        const quantityToRestore = product.orderProduct.quantity;
+        product.productStock += quantityToRestore;
+        await product.save();
+      }
+    }
+
+    order.orderState = newState;
+    await order.save();
+
+    res.json({ message: `Estado de la orden actualizado a "${newState}"`, order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al actualizar el estado de la orden" });
   }
 };
